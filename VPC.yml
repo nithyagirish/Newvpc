@@ -1,0 +1,121 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Creation of VPC with Subnets and Routetable along with Internet and NAT Gateway"
+Resources:
+  VPC:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: "cidr1"
+      EnableDnsHostnames: True
+      EnableDnsSupport: True
+      Instancetenancy: default
+      Tags:
+        - Key: "Name"
+          Value: "VPC"
+  PublicSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      CidrBlock: "cidr2"
+      MapPublicIpOnLaunch: True
+      VpcId:
+        Ref: "VPC"
+      Tags:
+        - Key: "Name"
+          Value: "PublicSubnet"
+      AvailabilityZone:
+        Fn::Select:
+          - "0"
+          - Fn::GetAZs:
+              Ref: "AWS::Region"
+  PrivateSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      CidrBlock: "cidr3"
+      MapPublicIpOnLaunch: false
+      VpcId:
+        Ref: "VPC"
+      Tags:
+        - Key: "Name"
+          Value: "PrivateSubnet"
+      AvailabilityZone:
+        Fn::Select:
+          - "0"
+          - Fn::GetAZs:
+              Ref: "AWS::Region"
+  RouteTablePublic:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId:
+        Ref: "VPC"
+      Tags:
+        - Key: "Name"
+          Value: "Public RouteTable"
+  RouteTablePublicAssociation1:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId:
+        Ref: "RouteTablePublic"
+      SubnetId:
+        Ref: "PublicSubnet1"
+  RouteTablePublicRoute0:
+    Type: "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      RouteTableId:
+        Ref: "RouteTablePublic"
+      GatewayId:
+        Ref: "Igw"
+  RouteTablePrivate1:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId:
+        Ref: "VPC"
+      Tags:
+        - Key: "Name"
+          Value: "Private RouteTable"
+  RouteTablePrivate1Association1:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId:
+        Ref: "RouteTablePrivate1"
+      SubnetId:
+        Ref: "PrivateSubnet1"
+  RouteTablePrivate1Route0:
+    Type: "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      RouteTableId:
+        Ref: "RouteTablePrivate1"
+      NatGatewayId:
+        Ref: "NatGw1"
+  Igw:
+    Type: "AWS::EC2::InternetGateway"
+    Properties:
+      Tags:
+        - Key: Name
+          Value: "igwname"
+  IGWAttachment:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    Properties:
+      VpcId:
+        Ref: "VPC"
+      InternetGatewayId:
+        Ref: "Igw"
+  NatGw1:
+    Type: "AWS::EC2::NatGateway"
+    Properties:
+      SubnetId:
+        Ref: "PublicSubnet1"
+      AllocationId:
+        Fn::GetAtt:
+          - "NatGw1ElasticIP"
+          - "AllocationId"
+      Tags:
+        - Key: "Name"
+          Value: "Natgateway"
+  NatGw1ElasticIP:
+    Type: "AWS::EC2::EIP"
+    Properties:
+      Domain: "VPC"
+Parameters: {}
+Metadata: {}
+Conditions: {}
